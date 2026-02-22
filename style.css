@@ -1,0 +1,432 @@
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --border: #2a2a2a;
+  --text: #f0f0f0;
+  --muted: #555;
+  --dim: #2a2a2a;
+  --green: #39e079;
+  --green-dim: rgba(57,224,121,0.1);
+  --orange: #ff9500;
+  --red: #ff3b30;
+}
+
+html, body {
+  height: 100%; width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-weight: 300;
+  touch-action: manipulation;
+}
+
+/* ── SCREENS ── */
+.screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+.screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(16px);
+}
+
+/* ── BLINK OVERLAY ──
+   The whole screen pulses green when rest time is up, until user taps.
+*/
+#blink-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--green);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 500;
+  display: none;
+}
+
+#blink-overlay.active {
+  display: block;
+  animation: screenBlink 1s ease-in-out infinite;
+}
+
+@keyframes screenBlink {
+  0%, 100% { opacity: 0;    }
+  50%       { opacity: 0.35; }
+}
+
+/* ── SETTINGS SCREEN ── */
+#settings-screen {
+  background: var(--bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.settings-header {
+  padding: max(env(safe-area-inset-top,0px), 2.5rem) 1.5rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.settings-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  letter-spacing: 0.03em;
+}
+
+.settings-body {
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-group {
+  border-bottom: 1px solid var(--border);
+  padding: 1.25rem 0;
+}
+
+.setting-group:last-of-type { border-bottom: none; }
+
+.setting-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.85rem;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.setting-row-spaced {
+  margin-bottom: 1.1rem;
+}
+
+.setting-name {
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--text);
+}
+
+.setting-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+  line-height: 1.4;
+}
+
+/* Presets row */
+.presets-row {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.preset-pill {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  transition: all 0.15s;
+}
+
+.preset-pill.active,
+.preset-pill:active {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* Stepper */
+.stepper {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.stepper-btn {
+  width: 46px; height: 46px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s;
+}
+.stepper-btn:active { background: var(--border); }
+
+.stepper-val {
+  min-width: 60px;
+  text-align: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  height: 46px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Toggle */
+.toggle-wrap { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+.toggle-input { display: none; }
+.toggle-track {
+  position: absolute; inset: 0;
+  border-radius: 31px;
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-input:checked + .toggle-track { background: var(--green); }
+.toggle-thumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 27px; height: 27px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+.toggle-input:checked ~ .toggle-thumb { transform: translateX(20px); }
+
+/* Start button */
+.start-btn-wrap {
+  padding: 0 1.5rem;
+}
+
+.start-btn {
+  margin: 1.5rem 0 max(env(safe-area-inset-bottom,0px), 2rem);
+  width: 100%;
+  padding: 1.1rem;
+  background: var(--green);
+  border: none;
+  border-radius: 16px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #0d0d0d;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.start-btn:active { transform: scale(0.98); }
+
+/* ── TIMER SCREEN ── */
+#timer-screen {
+  background: var(--bg);
+}
+
+/* Three rows: dots / tap-area / controls */
+.set-counter {
+  flex-shrink: 0;
+  padding: max(env(safe-area-inset-top,0px), 0.85rem) 1rem 0.6rem;
+  text-align: center;
+}
+
+.sets-display {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 18px;
+}
+
+.set-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+  transition: all 0.3s;
+}
+.set-dot.done    { background: var(--green); border-color: var(--green); }
+.set-dot.current { border-color: var(--text); }
+
+.overflow-count {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+/* Tap zone — fills remaining space */
+.tap-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  min-height: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Ring */
+.ring-wrap {
+  position: absolute;
+  inset: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ring-svg {
+  width: min(62vw, 48vh);
+  height: min(62vw, 48vh);
+  transform: rotate(-90deg);
+}
+
+.ring-bg   { fill: none; stroke: var(--dim); stroke-width: 4; }
+.ring-fill {
+  fill: none;
+  stroke: var(--green);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s linear, stroke 0.4s;
+}
+
+/* Digits sit on top */
+.timer-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+
+.timer-phase {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.3s;
+}
+
+.timer-digits {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(4rem, 22vw, 7rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  transition: color 0.3s;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Play icon state */
+#timer-screen.phase-idle .timer-digits {
+  font-size: clamp(2.5rem, 14vw, 5rem);
+  color: var(--green);
+  opacity: 0.85;
+}
+
+.timer-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
+  min-height: 1rem;
+}
+
+/* Bottom controls */
+.timer-bottom {
+  flex-shrink: 0;
+  padding: 0.6rem 1rem max(env(safe-area-inset-bottom,0px), 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.timer-hint {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.bottom-controls {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.ctrl-btn {
+  flex: 1;
+  padding: 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.ctrl-btn:active { background: #222; }
+.ctrl-btn.danger { color: var(--red); border-color: rgba(255,59,48,0.2); }
+
+/* Color states */
+.phase-rest  .timer-digits { color: var(--orange); }
+.phase-rest  .ring-fill    { stroke: var(--orange); }
+.phase-rest  .timer-phase  { color: var(--orange); }
+
+.phase-alert .timer-digits { color: var(--green); }
+.phase-alert .ring-fill    { stroke: var(--green); }
+.phase-alert .timer-phase  { color: var(--green); }
+
+/* Urgent pulse on last 5s */
+@keyframes urgentPulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+.urgent { animation: urgentPulse 0.75s ease-in-out infinite; }
