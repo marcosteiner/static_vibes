@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#0d0d0d">
+<title>Gym Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;700;900&family=Barlow:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --border: #2a2a2a;
+  --text: #f0f0f0;
+  --muted: #555;
+  --dim: #2a2a2a;
+  --green: #39e079;
+  --green-dim: rgba(57,224,121,0.1);
+  --orange: #ff9500;
+  --red: #ff3b30;
+}
+
+html, body {
+  height: 100%; width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-weight: 300;
+  touch-action: manipulation;
+}
+
+/* ── SCREENS ── */
+.screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+.screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(16px);
+}
+
+/* ── BLINK OVERLAY ──
+   This is the main alert: the whole screen pulses green
+   when rest time is up, until user taps.
+*/
+#blink-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--green);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 500;
+  display: none;
+}
+
+#blink-overlay.active {
+  display: block;
+  animation: screenBlink 1s ease-in-out infinite;
+}
+
+@keyframes screenBlink {
+  0%, 100% { opacity: 0;    }
+  50%       { opacity: 0.35; }
+}
+
+/* ── SETTINGS SCREEN ── */
+#settings-screen {
+  background: var(--bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.settings-header {
+  padding: max(env(safe-area-inset-top,0px), 2.5rem) 1.5rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.settings-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  letter-spacing: 0.03em;
+}
+
+.settings-body {
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-group {
+  border-bottom: 1px solid var(--border);
+  padding: 1.25rem 0;
+}
+
+.setting-group:last-of-type { border-bottom: none; }
+
+.setting-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.85rem;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.setting-name {
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--text);
+}
+
+.setting-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+  line-height: 1.4;
+}
+
+/* Presets row */
+.presets-row {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.preset-pill {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  transition: all 0.15s;
+}
+
+.preset-pill.active,
+.preset-pill:active {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* Stepper */
+.stepper {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.stepper-btn {
+  width: 46px; height: 46px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s;
+}
+.stepper-btn:active { background: var(--border); }
+
+.stepper-val {
+  min-width: 60px;
+  text-align: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  height: 46px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Toggle */
+.toggle-wrap { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+.toggle-input { display: none; }
+.toggle-track {
+  position: absolute; inset: 0;
+  border-radius: 31px;
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-input:checked + .toggle-track { background: var(--green); }
+.toggle-thumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 27px; height: 27px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+.toggle-input:checked ~ .toggle-thumb { transform: translateX(20px); }
+
+/* Start button */
+.start-btn {
+  margin: 1.5rem 0 max(env(safe-area-inset-bottom,0px), 2rem);
+  width: 100%;
+  padding: 1.1rem;
+  background: var(--green);
+  border: none;
+  border-radius: 16px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #0d0d0d;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.start-btn:active { transform: scale(0.98); }
+
+/* ── TIMER SCREEN ── */
+#timer-screen {
+  background: var(--bg);
+}
+
+/* Three rows: dots / tap-area / controls */
+.set-counter {
+  flex-shrink: 0;
+  padding: max(env(safe-area-inset-top,0px), 0.85rem) 1rem 0.6rem;
+  text-align: center;
+}
+
+.sets-display {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 18px;
+}
+
+.set-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+  transition: all 0.3s;
+}
+.set-dot.done   { background: var(--green); border-color: var(--green); }
+.set-dot.current { border-color: var(--text); }
+
+/* Tap zone — fills remaining space */
+.tap-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  min-height: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Ring */
+.ring-wrap {
+  position: absolute;
+  inset: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ring-svg {
+  width: min(62vw, 48vh);
+  height: min(62vw, 48vh);
+  transform: rotate(-90deg);
+}
+
+.ring-bg   { fill: none; stroke: var(--dim); stroke-width: 4; }
+.ring-fill {
+  fill: none;
+  stroke: var(--green);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s linear, stroke 0.4s;
+}
+
+/* Digits sit on top */
+.timer-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+
+.timer-phase {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.3s;
+}
+
+.timer-digits {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(4rem, 22vw, 7rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  transition: color 0.3s;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Play icon state */
+#timer-screen.phase-idle .timer-digits {
+  font-size: clamp(2.5rem, 14vw, 5rem);
+  color: var(--green);
+  opacity: 0.85;
+}
+
+.timer-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
+  min-height: 1rem;
+}
+
+/* Bottom controls */
+.timer-bottom {
+  flex-shrink: 0;
+  padding: 0.6rem 1rem max(env(safe-area-inset-bottom,0px), 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.timer-hint {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.bottom-controls {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.ctrl-btn {
+  flex: 1;
+  padding: 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.ctrl-btn:active { background: #222; }
+.ctrl-btn.danger { color: var(--red); border-color: rgba(255,59,48,0.2); }
+
+/* Color states */
+.phase-rest   .timer-digits { color: var(--orange); }
+.phase-rest   .ring-fill    { stroke: var(--orange); }
+.phase-rest   .timer-phase  { color: var(--orange); }
+
+.phase-alert  .timer-digits { color: var(--green); }
+.phase-alert  .ring-fill    { stroke: var(--green); }
+.phase-alert  .timer-phase  { color: var(--green); }
+
+/* Urgent pulse on last 5s */
+@keyframes urgentPulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+.urgent { animation: urgentPulse 0.75s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<!-- BLINK OVERLAY — pulses green when rest done -->
+<div id="blink-overlay"></div>
+
+<!-- ── SETTINGS ── -->
+<div class="screen" id="settings-screen">
+
+  <div class="settings-header">
+    <div class="settings-title">Gym Timer</div>
+    <div class="settings-sub">Silent · Blinks when rest is up · Headphone tone</div>
+  </div>
+
+  <div class="settings-body">
+
+    <!-- REST -->
+    <div class="setting-group">
+      <div class="setting-label">Rest Duration</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-name">Break length</div>
+          <div class="setting-hint">Timer counts down, then blinks until you tap</div>
+        </div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="adjustRest(-15)">−</button>
+          <div class="stepper-val" id="rest-display">60s</div>
+          <button class="stepper-btn" onclick="adjustRest(+15)">+</button>
+        </div>
+      </div>
+      <div class="presets-row" id="rest-presets">
+        <button class="preset-pill" onclick="setRest(30)">30s</button>
+        <button class="preset-pill active" onclick="setRest(60)">1 min</button>
+        <button class="preset-pill" onclick="setRest(90)">90s</button>
+        <button class="preset-pill" onclick="setRest(120)">2 min</button>
+        <button class="preset-pill" onclick="setRest(180)">3 min</button>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="setting-group">
+      <div class="setting-label">Alerts</div>
+
+      <div class="setting-row" style="margin-bottom:1.1rem">
+        <div>
+          <div class="setting-name">Screen blink</div>
+          <div class="setting-hint">Whole screen pulses green when rest is up — keeps blinking until you tap</div>
+        </div>
+        <div class="toggle-wrap">
+          <input type="checkbox" id="toggle-blink" class="toggle-input" checked>
+          <div class="toggle-track" onclick="document.getElementById('toggle-blink').click()"></div>
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+
+      <div class="setting-row" style="margin-bottom:1.1rem">
+        <div>
+          <div class="setting-name">Audio tone</div>
+          <div class="setting-hint">Soft two-note pulse through headphones</div>
+        </div>
+        <div class="toggle-wrap">
+          <input type="checkbox" id="toggle-audio" class="toggle-input" checked>
+          <div class="toggle-track" onclick="document.getElementById('toggle-audio').click()"></div>
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <div class="setting-name">10s warning</div>
+          <div class="setting-hint">Brief orange flash 10s before rest ends</div>
+        </div>
+        <div class="toggle-wrap">
+          <input type="checkbox" id="toggle-warning" class="toggle-input" checked>
+          <div class="toggle-track" onclick="document.getElementById('toggle-warning').click()"></div>
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="padding: 0 1.5rem">
+    <button class="start-btn" onclick="startSession()">START</button>
+  </div>
+</div>
+
+<!-- ── TIMER ── -->
+<div class="screen hidden" id="timer-screen">
+
+  <!-- Set dots -->
+  <div class="set-counter">
+    <div class="sets-display" id="sets-dots"></div>
+  </div>
+
+  <!-- Tap area: ring + digits -->
+  <div class="tap-zone" id="tap-zone" onclick="handleTap()">
+    <div class="ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 200 200">
+        <circle class="ring-bg"   cx="100" cy="100" r="90"/>
+        <circle class="ring-fill" cx="100" cy="100" r="90"
+          id="ring-fill"
+          stroke-dasharray="565.5"
+          stroke-dashoffset="565.5"/>
+      </svg>
+    </div>
+    <div class="timer-content">
+      <div class="timer-phase" id="timer-phase">START</div>
+      <div class="timer-digits" id="timer-digits">&#9654;</div>
+      <div class="timer-sub" id="timer-sub"></div>
+    </div>
+  </div>
+
+  <!-- Controls (outside tap zone) -->
+  <div class="timer-bottom">
+    <div class="timer-hint" id="timer-hint">Tap to start resting</div>
+    <div class="bottom-controls">
+      <button class="ctrl-btn" onclick="goSettings()">⚙ Settings</button>
+      <button class="ctrl-btn danger" onclick="resetAll()">↺ Reset</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────
+let restDuration = 60; // seconds
+
+let phase      = 'idle';   // idle | rest | alert
+let timeLeft   = 0;
+let totalTime  = 0;
+let setsDone   = 0;
+let ticker     = null;
+let warnFired  = false;
+let blinkInterval = null;
+let audioCtx   = null;
+
+// ── AUDIO ────────────────────────────────────────────────────────────────
+function ctx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTone(type) {
+  if (!document.getElementById('toggle-audio').checked) return;
+  try {
+    const c = ctx();
+    if (c.state === 'suspended') c.resume();
+
+    const freqs = type === 'go'      ? [440, 660]
+                : type === 'warning' ? [330]
+                : [660, 550, 440]; // done
+
+    freqs.forEach((freq, i) => {
+      const osc  = c.createOscillator();
+      const gain = c.createGain();
+      osc.connect(gain); gain.connect(c.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t = c.currentTime + i * 0.22;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.15, t + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      osc.start(t); osc.stop(t + 0.45);
+    });
+  } catch(e) {}
+}
+
+// ── BLINK ────────────────────────────────────────────────────────────────
+function startBlink() {
+  if (!document.getElementById('toggle-blink').checked) return;
+  const el = document.getElementById('blink-overlay');
+  el.classList.add('active');
+}
+
+function stopBlink() {
+  const el = document.getElementById('blink-overlay');
+  el.classList.remove('active');
+}
+
+// Single flash (for warning)
+function flashOnce(color) {
+  const el = document.getElementById('blink-overlay');
+  const prev = el.style.background;
+  el.style.background = color || '#ffffff';
+  el.style.animation = 'none';
+  el.style.display = 'block';
+  el.style.opacity = '0.3';
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.style.display = '';
+      el.style.animation = '';
+      el.style.background = '';
+    }, 300);
+  }, 200);
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────
+function adjustRest(delta) {
+  restDuration = Math.max(15, Math.min(600, restDuration + delta));
+  updateRestUI();
+}
+
+function setRest(s) {
+  restDuration = s;
+  updateRestUI();
+}
+
+function updateRestUI() {
+  document.getElementById('rest-display').textContent = fmtSec(restDuration);
+  const vals = { 30:true, 60:true, 90:true, 120:true, 180:true };
+  document.querySelectorAll('#rest-presets .preset-pill').forEach(p => {
+    const v = parseInt(p.textContent) || (p.textContent.includes('min') ? parseInt(p.textContent)*60 : 0);
+    // map text to seconds
+    const map = {'30s':30,'1 min':60,'90s':90,'2 min':120,'3 min':180};
+    p.classList.toggle('active', map[p.textContent.trim()] === restDuration);
+  });
+}
+
+// ── SESSION ───────────────────────────────────────────────────────────────
+function startSession() {
+  try { ctx(); } catch(e) {}
+  setsDone = 0;
+  phase = 'idle';
+  stopBlink();
+  clearInterval(ticker);
+
+  document.getElementById('settings-screen').classList.add('hidden');
+  document.getElementById('timer-screen').classList.remove('hidden');
+  document.getElementById('timer-screen').className = 'screen';
+
+  renderDots();
+  showIdle();
+}
+
+function handleTap() {
+  // Unlock audio on first tap
+  try { const c = ctx(); if (c.state === 'suspended') c.resume(); } catch(e) {}
+
+  if (phase === 'idle') {
+    // Start rest timer
+    startRest();
+  } else if (phase === 'rest') {
+    // Skip rest — go straight to alert/idle
+    endRest();
+  } else if (phase === 'alert') {
+    // Acknowledge — mark set done, go straight back to ready
+    stopBlink();
+    setsDone++;
+    phase = 'idle';
+    renderDots();
+    // Reset to ready state immediately, no "DONE" screen
+    clearInterval(ticker);
+    document.getElementById('timer-screen').className = 'screen phase-idle';
+    document.getElementById('timer-phase').textContent = 'START';
+    document.getElementById('timer-digits').innerHTML = '&#9654;';
+    document.getElementById('timer-sub').textContent = '';
+    document.getElementById('timer-hint').textContent = 'Tap to start rest timer';
+    document.getElementById('timer-digits').classList.remove('urgent');
+    setRingPct(0);
+  }
+}
+
+function startRest() {
+  clearInterval(ticker);
+  phase     = 'rest';
+  timeLeft  = restDuration;
+  totalTime = restDuration;
+  warnFired = false;
+
+  document.getElementById('timer-screen').className = 'screen phase-rest';
+  document.getElementById('timer-phase').textContent = 'REST';
+  document.getElementById('timer-hint').textContent  = 'Tap to skip rest';
+  document.getElementById('timer-digits').classList.remove('urgent');
+
+  const startAt = Date.now();
+  const startLeft = timeLeft;
+
+  ticker = setInterval(() => {
+    const elapsed = (Date.now() - startAt) / 1000;
+    timeLeft = Math.max(0, startLeft - elapsed);
+
+    // 10s warning
+    if (timeLeft <= 10 && !warnFired) {
+      warnFired = true;
+      if (document.getElementById('toggle-warning').checked) {
+        flashOnce('#ff9500');
+        playTone('warning');
+      }
+    }
+
+    // Urgent pulse last 5s
+    document.getElementById('timer-digits').classList.toggle('urgent', timeLeft <= 5);
+
+    updateRingAndDigits();
+
+    if (timeLeft <= 0) {
+      clearInterval(ticker);
+      endRest();
+    }
+  }, 80);
+}
+
+function endRest() {
+  clearInterval(ticker);
+  phase = 'alert';
+  timeLeft = 0;
+
+  document.getElementById('timer-screen').className = 'screen phase-alert';
+  document.getElementById('timer-digits').classList.remove('urgent');
+  document.getElementById('timer-phase').textContent = 'GO';
+  document.getElementById('timer-digits').textContent = 'GO';
+  document.getElementById('timer-sub').textContent    = 'Tap to confirm';
+  document.getElementById('timer-hint').textContent   = 'Tap when you start your set';
+  setRingPct(0); // empty ring
+
+  // Alerts
+  startBlink();
+  playTone('go');
+}
+
+function showIdle() {
+  clearInterval(ticker);
+  stopBlink();
+  document.getElementById('timer-screen').className = 'screen phase-idle';
+  document.getElementById('timer-phase').textContent = 'START';
+  document.getElementById('timer-digits').innerHTML = '&#9654;';
+  document.getElementById('timer-sub').textContent = '';
+  document.getElementById('timer-hint').textContent = 'Tap to start rest timer';
+  document.getElementById('timer-digits').classList.remove('urgent');
+  setRingPct(0);
+}
+
+function updateRingAndDigits() {
+  const pct = totalTime > 0 ? timeLeft / totalTime : 0;
+  setRingPct(pct);
+  document.getElementById('timer-digits').textContent = fmt(timeLeft);
+  document.getElementById('timer-sub').textContent = `of ${fmtSec(restDuration)}`;
+}
+
+function setRingPct(pct) {
+  const circ = 565.5;
+  // ring fills as time decreases (starts full, drains to empty)
+  document.getElementById('ring-fill').style.strokeDashoffset =
+    circ * (1 - Math.max(0, Math.min(1, pct)));
+}
+
+// Set dots — just counts, no cap
+function renderDots() {
+  const el = document.getElementById('sets-dots');
+  if (setsDone === 0) { el.innerHTML = ''; return; }
+  const max = Math.min(setsDone, 12);
+  let html = '';
+  for (let i = 0; i < max; i++) html += '<div class="set-dot done"></div>';
+  if (setsDone > 12) html += `<span style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:0.1em;color:var(--muted);margin-left:4px">+${setsDone-12}</span>`;
+  el.innerHTML = html;
+}
+
+function goSettings() {
+  clearInterval(ticker);
+  stopBlink();
+  phase = 'idle';
+  document.getElementById('timer-screen').classList.add('hidden');
+  document.getElementById('settings-screen').classList.remove('hidden');
+}
+
+function resetAll() {
+  clearInterval(ticker);
+  stopBlink();
+  setsDone = 0;
+  phase = 'idle';
+  renderDots();
+  showIdle();
+}
+
+// ── FORMAT ────────────────────────────────────────────────────────────────
+function fmt(secs) {
+  const s = Math.ceil(secs);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return m > 0 ? `${m}:${r.toString().padStart(2,'0')}` : `${s}`;
+}
+
+function fmtSec(s) {
+  if (s < 60) return s + 's';
+  const m = Math.floor(s/60), r = s%60;
+  return r ? `${m}m ${r}s` : `${m}m`;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+updateRestUI();
+
+// Wake lock — keep screen on
+(async () => {
+  try {
+    if ('wakeLock' in navigator) {
+      let wl = await navigator.wakeLock.request('screen');
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible') wl = await navigator.wakeLock.request('screen');
+      });
+    }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
