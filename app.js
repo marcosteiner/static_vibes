@@ -80,7 +80,7 @@ function flashOnce(color) {
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────
-const PRESET_MAP = { '30s': 30, '1 min': 60, '90s': 90, '2 min': 120, '3 min': 180 };
+const PRESET_MAP = { '45s': 45, '1 min': 60, '90s': 90, '2 min': 120, '3 min': 180 };
 
 function adjustRest(delta) {
   restDuration = Math.max(15, Math.min(600, restDuration + delta));
