@@ -1,7 +1,7 @@
 const TONE_FREQS = {
   go:      [440, 660],
   warning: [330],
-  done:    [440, 660, 440, 660, 440, 660],
+  done:    [440, 660, 0, 0, 440, 660, 0, 0, 440, 660],
 };
 
 function getAudioCtx() {

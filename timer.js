@@ -95,5 +95,9 @@ function goSettings() {
 function resetAll() {
   clearInterval(state.ticker);
   stopBlink();
+  state.phase    = 'idle';
+  state.setsDone = 0;
+  state.timeLeft = 0;
+  state.totalTime = 0;
   showIdle();
 }
