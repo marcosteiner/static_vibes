@@ -58,7 +58,7 @@
           <div class="setting-hint">Whole screen pulses green when rest is up — keeps blinking until you tap</div>
         </div>
         <div class="toggle-wrap">
-          <input type="checkbox" id="toggle-blink" class="toggle-input" checked>
+          <input type="checkbox" id="toggle-blink" class="toggle-input" checked onchange="saveSettings()">
           <div class="toggle-track" onclick="document.getElementById('toggle-blink').click()"></div>
           <div class="toggle-thumb"></div>
         </div>
@@ -70,7 +70,7 @@
           <div class="setting-hint">Soft two-note pulse through headphones</div>
         </div>
         <div class="toggle-wrap">
-          <input type="checkbox" id="toggle-audio" class="toggle-input" checked>
+          <input type="checkbox" id="toggle-audio" class="toggle-input" checked onchange="saveSettings()">
           <div class="toggle-track" onclick="document.getElementById('toggle-audio').click()"></div>
           <div class="toggle-thumb"></div>
         </div>
@@ -82,7 +82,7 @@
           <div class="setting-hint">Brief orange flash 10s before rest ends</div>
         </div>
         <div class="toggle-wrap">
-          <input type="checkbox" id="toggle-warning" class="toggle-input" checked>
+          <input type="checkbox" id="toggle-warning" class="toggle-input" checked onchange="saveSettings()">
           <div class="toggle-track" onclick="document.getElementById('toggle-warning').click()"></div>
           <div class="toggle-thumb"></div>
         </div>
@@ -134,10 +134,10 @@
 
 </div>
 
-<script src="state.js"></script>
-<script src="audio.js"></script>
-<script src="ui.js"></script>
-<script src="timer.js"></script>
-<script src="main.js"></script>
+<script src="js/state.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
