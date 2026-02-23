@@ -12,7 +12,7 @@ let audioCtx     = null;
 const TONE_FREQS = {
   go:      [440, 660],
   warning: [330],
-  done:    [660, 550, 440],
+  done:    [440, 660, 440, 660, 440, 660],
 };
 
 function getAudioCtx() {
@@ -121,16 +121,13 @@ function startSession() {
   stopBlink();
   clearInterval(ticker);
   showTimerScreen();
-  renderDots();
   showIdle();
 }
 
 // ── TAP HANDLER ───────────────────────────────────────────────────────────
 function acknowledgeSet() {
   stopBlink();
-  setsDone++;
   phase = 'idle';
-  renderDots();
   clearInterval(ticker);
   showIdle();
 }
@@ -191,7 +188,7 @@ function endRest() {
   phase = 'alert'; timeLeft = 0;
   setAlertPhaseUI();
   startBlink();
-  playTone('go');
+  playTone('done');
 }
 
 // ── IDLE ──────────────────────────────────────────────────────────────────
@@ -224,20 +221,6 @@ function updateRingAndDigits() {
   document.getElementById('timer-sub').textContent    = `of ${fmtSec(restDuration)}`;
 }
 
-// ── DOTS ──────────────────────────────────────────────────────────────────
-function buildDotsHTML() {
-  const max = Math.min(setsDone, 12);
-  let html  = '';
-  for (let i = 0; i < max; i++) html += '<div class="set-dot done"></div>';
-  if (setsDone > 12) html += `<span class="overflow-count">+${setsDone - 12}</span>`;
-  return html;
-}
-
-function renderDots() {
-  const el = document.getElementById('sets-dots');
-  el.innerHTML = setsDone === 0 ? '' : buildDotsHTML();
-}
-
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 function goSettings() {
   clearInterval(ticker);
@@ -250,8 +233,6 @@ function goSettings() {
 function resetAll() {
   clearInterval(ticker);
   stopBlink();
-  setsDone = 0; phase = 'idle';
-  renderDots();
   showIdle();
 }
 
