@@ -76,7 +76,7 @@ function setAlertPhaseUI() {
 function setIdlePhaseUI() {
   document.getElementById('timer-screen').className  = 'screen phase-idle';
   document.getElementById('timer-phase').textContent  = 'START TIMER';
-  document.getElementById('timer-digits').textContent = '▶';
+  document.getElementById('timer-digits').textContent = '▷';
   document.getElementById('timer-sub').textContent   = '';
   document.getElementById('timer-hint').textContent  = 'Tap to start rest timer';
   document.getElementById('timer-digits').classList.remove('urgent');
